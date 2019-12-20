@@ -18,6 +18,7 @@ library(DiscriMiner)
 library(praznik)
 library(RWeka)
 library(gridExtra)
+library (rpart.plot)
 library(rstudioapi)
 
 current_path <- getActiveDocumentContext()$path 
@@ -184,7 +185,7 @@ ggplot(bd) +
 
 bd <- bd[,-2:-4] #removing sex, education $ marital status features, these ones were the original, we are dropping these because we have a dummy features for each one
 
-### Methods (**30 points**)
+### Methods
 
 #correlation
 bd$DEFAULT <- as.numeric(bd$DEFAULT)
@@ -192,7 +193,7 @@ cor(bd)
 corrplot(cor(bd))
 corrplot.mixed(cor(bd))
 
-#Asimetría y Curtosis
+#Skewness and Curtosis
 apply(bd[,c(1,9:20)],2,kurtosis)
 apply(bd[,c(1,9:20)],2,skewness)
 
@@ -250,6 +251,106 @@ btest <- as.data.frame(cbind(X = balance_test$X, DEFAULT = balance_test$Y))
 table(btest$DEFAULT)/nrow(btest)
 
 ##ML WITH MLR PACKAGE------------------------------------
+bd <- read_excel("data/default-of-credit-card-clients.xls")
+
+bd <- bd[,-1] #droping the ID features
+
+#data wrangling
+
+#rename features, to work better with them
+bd <- bd %>%
+  rename (BAL = LIMIT_BAL, RPSEP = PAY_0, RPAGO = PAY_2, 
+          RPJUL = PAY_3, RPJUN = PAY_4, RPMAY = PAY_5, 
+          RPABR = PAY_6, BILLSEP = BILL_AMT1, BILLAGO = BILL_AMT2,
+          BILLJUL = BILL_AMT3, BILLJUN = BILL_AMT4, BILLMAY = BILL_AMT5,
+          BILLABR = BILL_AMT6, PREPAYSEP = PAY_AMT1, PREPAYAGO = PAY_AMT2,
+          PREPAYJUL = PAY_AMT3, PREPAYJUN = PAY_AMT4, PREPAYMAY = PAY_AMT5,
+          PREPAYABR = PAY_AMT6, DEFAULT = `default payment next month`)
+
+#we realize that the values of some features where different to the stated in the repository so we must change that
+#changing the values
+bd <- bd%>%
+  mutate(RPSEP = RPSEP + 1,
+         RPAGO = RPAGO + 1,
+         RPJUL = RPJUL + 1,
+         RPJUN = RPJUN + 1,
+         RPMAY = RPMAY + 1,
+         RPABR = RPABR + 1)
+
+#Dummy encoding
+bd <- bd %>%
+  mutate(EDUCATION = ifelse(EDUCATION >= 4 | EDUCATION == 0, 4, EDUCATION),
+         MARRIAGE = ifelse(MARRIAGE == 0, 3, MARRIAGE))
+
+bd <- bd %>%
+  mutate(MUJER = ifelse (SEX == 2, 1, 0), #0 hombre & 1 mujer,
+         PREGRADO = ifelse (EDUCATION == 2, 1, 0), 
+         HSCHOOL = ifelse (EDUCATION == 3, 1, 0),
+         POSGRADO = ifelse (EDUCATION == 1, 1, 0),
+         SINGLE = ifelse (MARRIAGE == 2, 1, 0),
+         MARRIED = ifelse (MARRIAGE == 1, 1, 0))
+
+#recategorize RP feature
+bd <- bd %>%
+  mutate(RPSEP = ifelse(RPSEP == 0, -1, RPSEP),
+         RPAGO = ifelse(RPAGO == 0, -1, RPAGO),
+         RPJUL = ifelse(RPJUL == 0, -1, RPJUL),
+         RPJUN = ifelse(RPJUN == 0, -1, RPJUN),
+         RPMAY = ifelse(RPMAY == 0, -1, RPMAY),
+         RPABR = ifelse(RPABR == 0, -1, RPABR))
+
+bd <- bd[,-2:-4] #removing sex, education $ marital status features, these ones were the original, we are dropping these because we have a dummy features for each one
+
+#Outliers
+#Using the euclidean distances (if its higher than 3 is a unsual case)
+bd <- bd%>%
+  mutate(out_BAL = abs(scale(bd$BAL)),
+         out_SEP = abs(scale(bd$BILLSEP)),
+         out_AGO = abs(scale(bd$BILLAGO)),
+         out_JUL = abs(scale(bd$BILLJUL)),
+         out_JUN = abs(scale(bd$BILLJUN)),
+         out_MAY = abs(scale(bd$BILLMAY)),
+         out_ABR = abs(scale(bd$BILLABR)))
+
+#removing the potencial outlier
+bd <- bd%>%
+  filter(out_BAL < 3 | out_SEP < 3 | out_AGO < 3 | out_JUL < 3 |
+           out_JUN < 3, out_MAY < 3, out_ABR <3)
+
+#removing the variables created for check the outlier
+table(bd$DEFAULT)
+bd <- bd[,-28:-34]
+
+#Split the dataset
+
+bd$DEFAULT <- factor(bd$DEFAULT, levels = c(0,1))
+set.seed(100)
+index_1 <- sample(1:nrow(bd), round(nrow(bd) * 0.8))
+train <- bd[index_1, ]
+test  <- bd[-index_1, ]
+summary(train)
+
+#Normalize
+normalize <- function(x) {
+  return ((x - min(x)) / (max(x) - min(x)))
+}
+
+train <- replace(train, 1:20,(apply(train[,1:20],2,normalize)))
+test <- replace(test, 1:20,(apply(test[,1:20],2,normalize)))
+
+#Balance the dataset
+Y <- train[,21]
+X <- train[,-21]
+balance_train <- ubSMOTE(X = X, Y = Y$DEFAULT, perc.over = 100, perc.under = 300, k=3)
+btrain <- as.data.frame(cbind(X = balance_train$X, DEFAULT = balance_train$Y))
+table(btrain$DEFAULT)/nrow(btrain)
+
+YT <- test[,21]
+XT <- test[,-21]
+balance_test <- ubSMOTE(X = XT, Y = as.factor(YT$DEFAULT), perc.over = 100, perc.under = 300, k=3)
+btest <- as.data.frame(cbind(X = balance_test$X, DEFAULT = balance_test$Y))
+table(btest$DEFAULT)/nrow(btest)
+
 
 #task
 btrain$DEFAULT <- factor(btrain$DEFAULT, levels = c(0,1))
@@ -259,7 +360,7 @@ getTaskFeatureNames(clasificacion.task)
 
 ##DECISION TREE----
 
-#lerner
+#Learner
 getParamSet("classif.rpart")
 learner.dt <- makeLearner("classif.rpart", 
                          predict.type = "response")

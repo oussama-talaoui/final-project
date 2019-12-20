@@ -31,6 +31,7 @@ library(randomForest)
 library(ada)
 library(RWeka)
 library(gridExtra)
+library (rpart.plot)
 
 data <- read_excel("data/default-of-credit-card-clients.xls")
 data <- data[,-1] #droping the ID features
@@ -58,7 +59,7 @@ data <- data %>%
 
 The aim of this project was to work with a "credit card default" dataset to classify if a person would fall or not in credit default considering demographic and banking characteristics.
 
-For each model that we realized to answer our question, there were no significant differences between the models in terms of the performance measures, except for KNN and Naive Bayes algorithms; the first one was overfitting the data and the second one presented some troubles with the assumptions, the other six models behave equally.
+For each model that we realized to answer our question, there were no significant differences between the models in terms of the performance measures, The first one was Decesion Tree, the second one was Logistic and the last one was Neural Network.
 
 After all the training process we decided to test one solution with unseen data, we choose the classification tree algorithm to do this; the output exhibited that the performance measure in this step was even better than the one we saw for the training set and that the algorithm pointed as the most relevant features the repayment status in September and the repayment status in April, thus, the possibility of falling in credit default will be associated with them.
 
@@ -290,11 +291,7 @@ And finaly, we can see that there is not a visible pattern between the age and b
 
 The appropriate methods are employed to answer the question of interest, including:
 
-- [ ] **Strength of relationships**: Uses the appropriate technique to assess the strength of relationships amongst your variables of interest. You should include:
-
-  - A formula describing how you believe your features (independent variables) are related to your outcome of interest (dependent variable) (**5 points**)
-  - A defense of the variables included in your formula (**5 points**)
-  - Creating the appropriate model based on your dataset (**5 points**)
+- **Strength of relationships**:
 
 All the work related to machine learning algorithms and data preparation was done using R software, basically, "mlr" package, and others.
 
@@ -304,14 +301,7 @@ Furthermore, in the data exploration, we realized that the repayment status was 
 
 The proper explanatory data analysis was conducted, checking correlations, skewness, kurtosis, normality distribution and so on; we found issues in the dataset with these measures. For instance, most of the numerical type features presented positive skewness. Moreover, we checked for potential outliers, scaling the features in a range from 0 to a 1, and dropping the ones that showed values higher than 3 (Euclidean distance threshold). The dataset was reduced to 29,265 instances, so we dropped around 735 instances that were potential outliers.
 
-- [ ] **Prediction**: You must also make predictions for your outcome of interest. In doing so, you must demonstrate a clear use of:
-
-  - Splitting your data into testing/training data (**2 points**)
-  - Applying cross validation to your model (**3 points**)
-  - Appropriately handling any missing values (**2 points**)
-  - Appropriately using categorical variables (**3 points**)
-  - Using a grid search to find the best parameters for you model of interest (**2 points**)
-  - Employing the algorithm of interest (**3 points**)
+- **Prediction**:
 
 For the proper deployment of the algorithms, the dataset was cut in two parts. The first subset was the training set, corresponds to the 80 % of the observations in the original dataset, and it was used to train all the algorithms, also to predict and assess the generalization of the model. On other hand, the test set was only used to evaluate one model (classification tree), to establish how well the model would behave with unseen data.
 
@@ -322,60 +312,97 @@ After all the process described before, we applied eight machine learning algori
 It is important to remark that for resampling (assessed of the algorithms) we used repeated cross-validation, setting the parameters in 3 folds and 2 repetitions.
 
 ### Results
-Describe the results of your analysis. What did you find? You should include at least 2 visuals that showcase the results (this is distinct from the exploratory analysis above, and should demonstrate the results of the methods you employed). 
 
-You must provide a clear interpretation of your statistical and machine learning results, including at least **one visual or table** for each.
+```{r, echo=FALSE, results='hide'}
+bd <- read_excel("data/default-of-credit-card-clients.xls")
 
-- [ ] **Strengths of relationships**: For the features you included in your model, you must describe the strength (significance) and magnitude of the relationships. This can be presented in a table or chart, and pertinent observations should be described in the text. (**10 points**)
-- [ ] **Predictions**: How well were you able to predict values in the dataset? You should both report appropriate metrics based on the type of outcome you're predicting (e.g., root mean squared error v.s. accuracy), as well as a high quality visual showing the strength of your model (**10 points**)
+bd <- bd[,-1] #droping the ID features
 
-```{r, echo=FALSE}
-#correlation
-data$DEFAULT <- as.numeric(data$DEFAULT)
-cor(data)
-corrplot(cor(data))
-corrplot.mixed(cor(data))
-#the most correlated variables with "default" are the repayment status ones
-#formula: default = all the variables, the idea is using all the features availables
+#data wrangling
 
-#Skewness and Kurtosis
-apply(data[,c(1,9:20)],2,kurtosis)
-apply(data[,c(1,9:20)],2,skewness)
+#rename features, to work better with them
+bd <- bd %>%
+  rename (BAL = LIMIT_BAL, RPSEP = PAY_0, RPAGO = PAY_2, 
+          RPJUL = PAY_3, RPJUN = PAY_4, RPMAY = PAY_5, 
+          RPABR = PAY_6, BILLSEP = BILL_AMT1, BILLAGO = BILL_AMT2,
+          BILLJUL = BILL_AMT3, BILLJUN = BILL_AMT4, BILLMAY = BILL_AMT5,
+          BILLABR = BILL_AMT6, PREPAYSEP = PAY_AMT1, PREPAYAGO = PAY_AMT2,
+          PREPAYJUL = PAY_AMT3, PREPAYJUN = PAY_AMT4, PREPAYMAY = PAY_AMT5,
+          PREPAYABR = PAY_AMT6, DEFAULT = `default payment next month`)
 
-#Normality
-apply(data[,1:20],2,jarque.bera.test)
-#most of the variables dont have a normal distribution
+#we realize that the values of some features where different to the stated in the repository so we must change that
+#changing the values
+bd <- bd%>%
+  mutate(RPSEP = RPSEP + 1,
+         RPAGO = RPAGO + 1,
+         RPJUL = RPJUL + 1,
+         RPJUN = RPJUN + 1,
+         RPMAY = RPMAY + 1,
+         RPABR = RPABR + 1)
+
+#Dummy encoding
+bd <- bd %>%
+  mutate(EDUCATION = ifelse(EDUCATION >= 4 | EDUCATION == 0, 4, EDUCATION),
+         MARRIAGE = ifelse(MARRIAGE == 0, 3, MARRIAGE))
+
+bd <- bd %>%
+  mutate(MUJER = ifelse (SEX == 2, 1, 0), #0 hombre & 1 mujer,
+         PREGRADO = ifelse (EDUCATION == 2, 1, 0), 
+         HSCHOOL = ifelse (EDUCATION == 3, 1, 0),
+         POSGRADO = ifelse (EDUCATION == 1, 1, 0),
+         SINGLE = ifelse (MARRIAGE == 2, 1, 0),
+         MARRIED = ifelse (MARRIAGE == 1, 1, 0))
+
+#recategorize RP feature
+bd <- bd %>%
+  mutate(RPSEP = ifelse(RPSEP == 0, -1, RPSEP),
+         RPAGO = ifelse(RPAGO == 0, -1, RPAGO),
+         RPJUL = ifelse(RPJUL == 0, -1, RPJUL),
+         RPJUN = ifelse(RPJUN == 0, -1, RPJUN),
+         RPMAY = ifelse(RPMAY == 0, -1, RPMAY),
+         RPABR = ifelse(RPABR == 0, -1, RPABR))
+
+bd <- bd[,-2:-4] #removing sex, education $ marital status features, these ones were the original, we are dropping these because we have a dummy features for each one
 
 #Outliers
 #Using the euclidean distances (if its higher than 3 is a unsual case)
-
-data <- data%>%
-  mutate(out_BAL = abs(scale(data$BAL)),
-         out_SEP = abs(scale(data$BILLSEP)),
-         out_AGO = abs(scale(data$BILLAGO)),
-         out_JUL = abs(scale(data$BILLJUL)),
-         out_JUN = abs(scale(data$BILLJUN)),
-         out_MAY = abs(scale(data$BILLMAY)),
-         out_ABR = abs(scale(data$BILLABR)))
+bd <- bd%>%
+  mutate(out_BAL = abs(scale(bd$BAL)),
+         out_SEP = abs(scale(bd$BILLSEP)),
+         out_AGO = abs(scale(bd$BILLAGO)),
+         out_JUL = abs(scale(bd$BILLJUL)),
+         out_JUN = abs(scale(bd$BILLJUN)),
+         out_MAY = abs(scale(bd$BILLMAY)),
+         out_ABR = abs(scale(bd$BILLABR)))
 
 #removing the potencial outlier
-data <- data%>%
+bd <- bd%>%
   filter(out_BAL < 3 | out_SEP < 3 | out_AGO < 3 | out_JUL < 3 |
            out_JUN < 3, out_MAY < 3, out_ABR <3)
 
 #removing the variables created for check the outlier
-table(data$DEFAULT)
-data <- data[,-28:-34]
+table(bd$DEFAULT)
+bd <- bd[,-28:-34]
 
-#Spliting the dataset
+```
 
-data$DEFAULT <- factor(data$DEFAULT, levels = c(0,1))
+The summary of the data we used for training:
+
+```{r, echo=FALSE, results='hide'}
+#Split the dataset
+
+bd$DEFAULT <- factor(bd$DEFAULT, levels = c(0,1))
 set.seed(100)
-index_1 <- sample(1:nrow(data), round(nrow(data) * 0.8))
-train <- data[index_1, ]
-test  <- data[-index_1, ]
-summary(train)
+index_1 <- sample(1:nrow(bd), round(nrow(bd) * 0.8))
+train <- bd[index_1, ]
+test  <- bd[-index_1, ]
+```
 
+```{r, echo=FALSE}
+summary(train)
+```
+
+```{r, echo=FALSE, results='hide'}
 #Normalize
 normalize <- function(x) {
   return ((x - min(x)) / (max(x) - min(x)))
@@ -396,6 +423,188 @@ XT <- test[,-21]
 balance_test <- ubSMOTE(X = XT, Y = as.factor(YT$DEFAULT), perc.over = 100, perc.under = 300, k=3)
 btest <- as.data.frame(cbind(X = balance_test$X, DEFAULT = balance_test$Y))
 table(btest$DEFAULT)/nrow(btest)
+
+#task
+btrain$DEFAULT <- factor(btrain$DEFAULT, levels = c(0,1))
+clasificacion.task <- makeClassifTask(id = "task", data = btrain, target = "DEFAULT", positive = "1")
+clasificacion.task
+getTaskFeatureNames(clasificacion.task)
+```
+
+- **Decision Tree**:
+
+Train
+```{r, echo=FALSE}
+##DECISION TREE----
+
+#Learner
+getParamSet("classif.rpart")
+learner.dt <- makeLearner("classif.rpart", 
+                         predict.type = "response")
+
+#Train
+mod.dt <- mlr::train(learner.dt, clasificacion.task)
+getLearnerModel(mod.dt)
+
+```
+
+Prediction
+```{r, echo=FALSE,}
+#Predict
+predict.dt <- predict(mod.dt, task = clasificacion.task)
+head(as.data.frame(predict.dt))
+calculateConfusionMatrix(predict.dt)
+
+predict.test.dt <- predict(mod.dt, newdata = btest)#TEST PREDICTION
+```
+
+Performance
+```{r, echo=FALSE,}
+#Performance
+listMeasures(clasificacion.task)
+performance(predict.dt, measures = list(acc, mmce, kappa))
+performance(predict.test.dt, measures = list(acc, mmce, kappa))#PERFORMANCE TEST
+
+```
+
+Resampling
+```{r, echo=FALSE,}
+
+#Resampling
+RCV.dt <- repcv(learner.dt, clasificacion.task, folds = 3, reps = 2, 
+             measures = list(acc, mmce, kappa), stratify = TRUE)
+RCV.dt$aggr
+
+```
+
+Here is a graph of the generated tree:
+
+```{r, echo=FALSE,}
+
+#GRAPH OF THE TREE
+rpart.plot(mod.dt$learner.model,  box.palette="RdBu", shadow.col="gray", nn=TRUE)
+
+```
+
+- **Logistic**:
+
+```{r, echo=FALSE}
+##LOGISTIC----
+
+#learner
+getParamSet("classif.logreg")
+learner.lr <- makeLearner("classif.logreg",
+                         predict.type = "response")
+```
+
+Train
+```{r, echo=FALSE,}
+#Train
+mod.lr <- mlr::train (learner.lr, clasificacion.task)
+getLearnerModel(mod.lr)
+summary(mod.lr$learner.model)#OUTPUT
+
+```
+
+Prediction
+```{r, echo=FALSE,}
+
+#Prediction
+predict.lr <- predict(mod.lr, clasificacion.task)
+calculateConfusionMatrix(predict.lr)
+
+```
+
+Performance
+```{r, echo=FALSE,}
+
+#Performance
+performance(predict.lr, measures = list(acc, mmce, kappa))
+
+```
+
+Resampling
+```{r, echo=FALSE,}
+
+#Resampling
+RCV.lr <- repcv(learner.lr, clasificacion.task, folds = 3, reps = 2, 
+                measures = list(acc, mmce, kappa), stratify = TRUE)
+RCV.lr$aggr
+
+```
+
+- **Neural Network**:
+
+```{r, echo=FALSE}
+##Neural Network----
+
+```
+
+Learner
+```{r, echo=FALSE,}
+#learner
+getParamSet("classif.nnet")
+learner.nn <- makeLearner("classif.nnet", 
+                          predict.type = "response")
+learner.nn$par.set
+
+```
+
+Train
+```{r, echo=FALSE,}
+
+#Train
+mod.nn <- mlr::train(learner.nn, clasificacion.task)
+getLearnerModel(mod.nn)
+
+```
+
+Prediction
+```{r, echo=FALSE,}
+
+#Predict
+predict.nn <- predict(mod.nn, task = clasificacion.task)
+head(as.data.frame(predict.nn))
+calculateConfusionMatrix(predict.nn)
+
+predict.test.nn <- predict(mod.nn, newdata = btest)
+
+```
+
+Performance
+```{r, echo=FALSE,}
+
+#Performance
+performance(predict.nn, measures = list(acc, mmce, kappa))
+performance(predict.test.nn, measures = list(acc, mmce, kappa))
+
+```
+
+Resampling
+```{r, echo=FALSE,}
+
+#Resampling
+RCV.nn <- repcv(learner.nn, clasificacion.task, folds = 3, reps = 2, 
+             measures = list(acc, mmce, kappa), stratify = TRUE)
+
+RCV.nn$aggr
+
+```
+
+- **Benchmark**:
+
+A comparison between the 3 models:
+
+```{r, echo=FALSE}
+##Benchmark----
+
+#to compare between models
+lrns <- list(learner.dt, learner.lr, learner.nn)
+rdesc <- makeResampleDesc("RepCV", folds = 3, reps = 2) #Choose the resampling strategy
+bmr <- benchmark(lrns, clasificacion.task, rdesc, measures = list(acc, mmce, kappa))
+getBMRPerformances(bmr, as.df = TRUE)
+getBMRAggrPerformances(bmr, as.df = TRUE)
+
 ```
 
 ### Discussion and Future Work
