@@ -1,12 +1,49 @@
 ---
 title: "Final Data Processes Project"
 author: "Group-3"
-date: "18/12/2019"
+#date: "18/12/2019"
 output: html_document
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(corrplot)
+library(ppcor)
+library(dplyr)
+library(GGally)
+library(tseries)
+library(purrr)
+library(tidyr)
+library(readxl)
+library(recipes)
+library(mlr)
+library(mlbench)
+library(e1071)
+library(kknn)
+library(rpart)
+library(kernlab)
+library(nnet)
+library(unbalanced)
+library(DiscriMiner)
+library(FSelectorRcpp)
+library(praznik)
+library(randomForest)
+library(ada)
+library(RWeka)
+library(gridExtra)
+
+data <- read_excel("data/default-of-credit-card-clients.xls")
+data <- data[,-1] #droping the ID features
+
+#rename features, to work better with them
+data <- data %>%
+  rename (BAL = LIMIT_BAL, RPSEP = PAY_0, RPAGO = PAY_2, 
+          RPJUL = PAY_3, RPJUN = PAY_4, RPMAY = PAY_5, 
+          RPABR = PAY_6, BILLSEP = BILL_AMT1, BILLAGO = BILL_AMT2,
+          BILLJUL = BILL_AMT3, BILLJUN = BILL_AMT4, BILLMAY = BILL_AMT5,
+          BILLABR = BILL_AMT6, PREPAYSEP = PAY_AMT1, PREPAYAGO = PAY_AMT2,
+          PREPAYJUL = PAY_AMT3, PREPAYJUN = PAY_AMT4, PREPAYMAY = PAY_AMT5,
+          PREPAYABR = PAY_AMT6, DEFAULT = `default payment next month`)
 ```
 
 # DATA PROCESSES FINAL PROJECT (GROUP 3)
@@ -18,10 +55,6 @@ knitr::opts_chunk$set(echo = TRUE)
 | ANGULO MONTES LUIS EDUARDO| LuisEduardoAngulo         |
 | BORRERO GARCIA FRANCISCO  | Macvayne                  |
 | TAHIRI ALAOUI OUSSAMA     | oussama-talaoui           |
-
-## Final Project Rubric
-
-This rubric is intended to help guide expectations and increase transparency. However, it is not necessarily fully exhaustive. Make sure to read the detailed explanation on Moodle.
 
 ### Abstract (**5 points**)
 A 150 word (maximum) summary of your project and findings.
@@ -43,6 +76,143 @@ Your paper should contain at least 5 well designed and formatted graphics that i
   - Written interpretation of graphic is provided (**1 point**)
   - Clear axis labels, titles, and legends are included, where appropriate (**1 point**)
 
+For this work, we used the "Taiwan's credit card default clients" dataset. This one was taken from the UCI Machine Learning Repository and it is composed of 24 features and 30.000 instances. Basically, it contains some demographic and banking information from credit cardholders of a bank in Taiwan for 2005. The features are described as follow:
+
+```{r, echo=FALSE}
+#we realize that the values of some features where different to the stated in the repository so we must change that
+#changing the values
+data <- data%>%
+  mutate(RPSEP = RPSEP + 1,
+         RPAGO = RPAGO + 1,
+         RPJUL = RPJUL + 1,
+         RPJUN = RPJUN + 1,
+         RPMAY = RPMAY + 1,
+         RPABR = RPABR + 1)
+
+#Dummy encoding
+data <- data %>%
+  mutate(EDUCATION = ifelse(EDUCATION >= 4 | EDUCATION == 0, 4, EDUCATION),
+         MARRIAGE = ifelse(MARRIAGE == 0, 3, MARRIAGE))
+
+data <- data %>%
+  mutate(MUJER = ifelse (SEX == 2, 1, 0), #0 hombre & 1 mujer,
+         PREGRADO = ifelse (EDUCATION == 2, 1, 0), 
+         HSCHOOL = ifelse (EDUCATION == 3, 1, 0),
+         POSGRADO = ifelse (EDUCATION == 1, 1, 0),
+         SINGLE = ifelse (MARRIAGE == 2, 1, 0),
+         MARRIED = ifelse (MARRIAGE == 1, 1, 0))
+
+#recategorize RP feature
+data <- data %>%
+  mutate(RPSEP = ifelse(RPSEP == 0, -1, RPSEP),
+         RPAGO = ifelse(RPAGO == 0, -1, RPAGO),
+         RPJUL = ifelse(RPJUL == 0, -1, RPJUL),
+         RPJUN = ifelse(RPJUN == 0, -1, RPJUN),
+         RPMAY = ifelse(RPMAY == 0, -1, RPMAY),
+         RPABR = ifelse(RPABR == 0, -1, RPABR))
+
+#Turning into a categorical feature (factor)
+data$DEFAULT <- factor(data$DEFAULT, levels = c(0,1))
+data$EDUCATION <- factor(data$EDUCATION, levels = c(1:4))
+
+#Graphics
+
+#1.Basic graph to check the distribution 3 features
+#Histograms
+
+ggplot(data = data) +
+  aes(x = BAL)+
+  geom_histogram(bins = 30, color="cornsilk4", fill="darkblue") +
+  labs(title = "Credit Balance - Histogram", x = "Amount of the given credit (NT$)", y = "Frequency") 
+
+ggplot(data = data) +
+  aes(x = BILLSEP)+
+  geom_histogram(bins = 30, color="cornsilk4", fill="darkblue") +
+  labs(title = "Amount of bill in September - Histogram", x = "Amount of bill statement in September (NT$)", y = "Frequency") 
+
+ggplot(data = data) +
+  aes(x = PREPAYSEP)+
+  geom_histogram(bins = 30, color="cornsilk4", fill="darkblue") +
+  labs(title = "Amount of previous payment in September - Histogram", x = "Amount of previous payment in September (NT$)", y = "Frequency") 
+
+#Most of the numerical type features presented positive skewness.
+
+#2.Lets go deeper to understand the behavior of the default payment regarding the balance in the account
+
+ggplot(data = data) +
+  aes(x = DEFAULT, y = BAL)+
+  geom_boxplot(color="cornsilk4", fill="darkblue",
+               notch = TRUE,
+               notchwidth = 0.8,
+               outlier.colour="red",
+               outlier.fill="red",
+               outlier.size=3) +
+  labs(title = "Credit Balance and Default payment - Boxplot", subtitle="Defaulter Info based on Credit Given", x = "Default payment", y = "Amount of the given credit (NT$)") +  
+  theme(panel.background = element_rect(fill = "gray97"))
+
+#it is seem that there is differences between the groups, the people with default tends to have a lower balance account. We must highligth the outlier
+
+#3.Graph 3
+
+ggplot(data = data) +
+  aes(x = EDUCATION, fill = DEFAULT)+
+  geom_bar() +
+  scale_fill_brewer(palette = "Set1") +
+  labs(title = "Default payment and level of education", x = "Education level", y = "Observation count") +
+  scale_x_discrete(labels = c('Graduate School','University','High School', 'Others'))
+
+#here we can see that mostly university graduated people are the ones with more defaults
+
+#4.Graph 4
+
+g1 <- ggplot(data = data) +
+  aes(x = factor(RPSEP), fill = DEFAULT)+
+  geom_bar() +
+  coord_flip() +
+  scale_fill_brewer(palette = "Set1") +
+  labs(title = "Repayment status in September and default payment", y = "Observation count", x = "Repayment status in September") 
+
+g2 <- ggplot(data = data) +
+  aes(x = factor(RPAGO), fill = DEFAULT)+
+  geom_bar() +
+  coord_flip() +
+  scale_fill_brewer(palette = "Set1") +
+  labs(title = "Repayment status in August and default payment", y = "Observation count", x = "Repayment status in August") 
+
+g3 <- ggplot(data = data) +
+  aes(x = factor(RPJUL), fill = DEFAULT)+
+  geom_bar() +
+  coord_flip() +
+  scale_fill_brewer(palette = "Set1") +
+  labs(title = "Repayment status in July and default payment", y = "Observation count", x = "Repayment status in July") 
+
+g4 <- ggplot(data = data) +
+  aes(x = factor(RPJUN), fill = DEFAULT)+
+  geom_bar() +
+  coord_flip() +
+  scale_fill_brewer(palette = "Set1") +
+  labs(title = "Repayment status in June and default payment", y = "Observation count", x = "Repayment status in June") 
+
+g5 <- ggplot(data = data) +
+  aes(x = factor(RPMAY), fill = DEFAULT)+
+  geom_bar() +
+  coord_flip() +
+  scale_fill_brewer(palette = "Set1") +
+  labs(title = "Repayment status in May and default payment", y = "Observation count", x = "Repayment status in May") 
+
+g6 <- ggplot(data = data) +
+  aes(x = factor(RPABR), fill = DEFAULT)+
+  geom_bar() +
+  coord_flip() +
+  scale_fill_brewer(palette = "Set1") +
+  labs(title = "Repayment status in April and default payment", y = "Observation count", x = "Repayment status in April") 
+
+#this is the graph that we need to put in the report
+grid.arrange(g1,g2,g3,g4,g5,g6)
+
+#Here we can see that most of the people with defaul have payments delay for one or three months
+```
+
 ### Methods (**30 points**)
 In this section, you must describe (and perform) the appropriate analysis for answering your question of interest.  Provide a description of both the statistical and machine learning techniques used to answer your question of interest regarding strength of relationships and prediction of your outcome.
 
@@ -59,6 +229,22 @@ The appropriate methods are employed to answer the question of interest, includi
   - Appropriately using categorical variables (**3 points**)
   - Using a grid search to find the best parameters for you model of interest (**2 points**)
   - Employing the algorithm of interest (**3 points**)
+  
+All the work related to machine learning algorithms and data preparation was done using R software, basically, "mlr" package, and others.
+
+As mentioned before, the dataset did not have any missing values, but the data wrangling and engineering was necessary because of the categorical features, they did not appear as it was stated in the repository. Therefore, the first thing that we did was a dummy encoding for sex, education and marriage features, where the following levels were dropped in each one: men, other education, other marital status.
+
+Furthermore, in the data exploration, we realized that the repayment status was not between the proper range (-1 to 9), it was slid one unit (going for -2 to 8); thus, we added one unit to the scale. Regarding this feature, we chose not to encode as a dummy due to it was ordinal, so it was used like that.
+
+The proper explanatory data analysis was conducted, checking correlations, skewness, kurtosis, normality distribution and so on; we found issues in the dataset with these measures. For instance, most of the numerical type features presented positive skewness. Moreover, we checked for potential outliers, scaling the features in a range from 0 to a 1, and dropping the ones that showed values higher than 3 (Euclidean distance threshold). The dataset was reduced to 29,265 instances, so we dropped around 735 instances that were potential outliers.
+
+For the proper deployment of the algorithms, the dataset was cut in two parts. The first subset was the training one, correspond to the 80 % of the observations in the original dataset, and it was used to train all the algorithms, also to predict and assess the generalization of the model. On other hand, the test set was only used to evaluate one model (classification tree), to establish how well the model would behave with unseen data.
+
+Once the dataset was split, we proceeded to scale the features because some of them were in different units of measurement. To fulfill this task, we used the min-max scaling function. Afterward, some statistics summery was applied to check the results, we realized that for the machine algorithms deployment we would have some trouble with predictions because the classes of our label feature. To solve this unbalance data issue, we performed a data balance process to avoid that in our prediction the model will be tempted to misclassify the minority class; in general, machine learning algorithms tends to follow the majority, so they will perform well with the most common class and not that good with the uncommon one.
+
+After all the process described before, we applied eight machine learning algorithms on the training set following the "mlr" approach (create a task, create a learner, train, predict, resampling). We implemented the following algorithms: Classification Tree, Logistic Regression, and Neural Network). Basically, we trained each one of them, then obtained a prediction for the training set, observed their performance and finally we evaluated their generalization with a resampling approach.
+
+It is important to remark that for resampling (assessed of the algorithms) it was used repeated cross-validation, setting the parameters in 3 folds and 2 repetitions.
 
 ### Results (**20 points**)
 Describe the results of your analysis. What did you find? You should include at least 2 visuals that showcase the results (this is distinct from the exploratory analysis above, and should demonstrate the results of the methods you employed). 
@@ -67,6 +253,8 @@ You must provide a clear interpretation of your statistical and machine learning
 
 - [ ] **Strengths of relationships**: For the features you included in your model, you must describe the strength (significance) and magnitude of the relationships. This can be presented in a table or chart, and pertinent observations should be described in the text. (**10 points**)
 - [ ] **Predictions**: How well were you able to predict values in the dataset? You should both report appropriate metrics based on the type of outcome you're predicting (e.g., root mean squared error v.s. accuracy), as well as a high quality visual showing the strength of your model (**10 points**)
+
+Classification trees: As its name suggests, this algorithm follows a tree structure to predict a class, where each tree has its root node (a relevant feature to predict the class), leaf nodes (following features) and branches (output of the test). Works by partitioning the feature space into a number of smaller scenarios with similar response values using a set of splitting rules. The segmentation process is typically carried out using only one explanatory variable at a time.
 
 ### Discussion and Future Work (**10 points**)
 What are the real world implications of your results, and what further work should be done in this area based on your insights?
@@ -80,10 +268,4 @@ Based on _specific observations_ from the results section, the report clearly pr
 
 - [ ] Code is well commented and structured (e.g., indented), organized across multiple different files, uses clear variable names, and runs on any computer.
 
-You should submit two URLs for the project: your GitHub repository URL, as well as the URL of the hosted website where your report can be viewed. 
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+You should submit two URLs for the project: your GitHub repository URL, as well as the URL of the hosted website where your report can be viewed.
