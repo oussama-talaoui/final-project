@@ -18,9 +18,16 @@ library(DiscriMiner)
 library(praznik)
 library(RWeka)
 library(gridExtra)
+library(rstudioapi)
 
-bd <- read_excel("data/default-of-credit-card-clients.xls", skip = 1)
-bd <- default_of_credit_card_clients
+current_path <- getActiveDocumentContext()$path 
+# The next line set the working directory to the relevant one:
+setwd(dirname(current_path ))
+# you can make sure you are in the right directory
+print( getwd() )
+
+bd <- read_excel("data/default-of-credit-card-clients.xls")
+
 bd <- bd[,-1] #droping the ID features
 View(bd)
 
