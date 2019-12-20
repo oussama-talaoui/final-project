@@ -1,6 +1,6 @@
 ---
-title: "Final Data Processes Project"
-author: "Group-3"
+title: "DATA PROCESSES FINAL PROJECT (GROUP 3)"
+#author: "Group-3"
 #date: "18/12/2019"
 output: html_document
 ---
@@ -46,9 +46,7 @@ data <- data %>%
           PREPAYABR = PAY_AMT6, DEFAULT = `default payment next month`)
 ```
 
-# DATA PROCESSES FINAL PROJECT (GROUP 3)
-
-   ## Group Users
+### Group Members
 
 | Name                      | Github username           |
 |---------------------------|---------------------------|
@@ -56,27 +54,61 @@ data <- data %>%
 | BORRERO GARCIA FRANCISCO  | Macvayne                  |
 | TAHIRI ALAOUI OUSSAMA     | oussama-talaoui           |
 
-### Abstract (**5 points**)
-A 150 word (maximum) summary of your project and findings.
+### Abstract
 
-- [ ] Succinctly summarizes the importance and findings of the project within the 150 word limit.
+The aim of this project was to work with a "credit card default" dataset to classify if a person would fall or not in credit default considering demographic and banking characteristics.
 
-### Introduction and Related Work (**10 points**)
-An explanation of the problem and the motivation for solving it. Make sure to cite at least 5 related works to situate your question within the broader topic area.
+For each model that we realized to answer our question, there were no significant differences between the models in terms of the performance measures, except for KNN and Naive Bayes algorithms; the first one was overfitting the data and the second one presented some troubles with the assumptions, the other six models behave equally.
 
-- [ ] Provides a clear motivation for answering a _specific_ data driven question of interest (**5 points**)
-- [ ] Cites 5 _relevant_ pieces of relevant work (whatever format you choose is fine, including just a hyperlink) (**1 point each**)
+After all the training process we decided to test one solution with unseen data, we choose the classification tree algorithm to do this; the output exhibited that the performance measure in this step was even better than the one we saw for the training set and that the algorithm pointed as the most relevant features the repayment status in September and the repayment status in April, thus, the possibility of falling in credit default will be associated with them.
 
-### Exploratory Data Analysis (**20 points**)
-Your paper should contain at least 5 well designed and formatted graphics that introduce the pertinent features of your dataset. You must also describe the pertinent observations from those graphics.  
+### Introduction and Related Work
 
-- [ ] Introduces the dataset by describing the origin (source) and structure (shape, relevant features) of the data being used (**5 points**)
-- [ ] Creates 5 well designed and formatted graphics (**15 points**, 3 each)
-  - The visual uses the appropriate visual encodings based on the data type (**1 point**)
-  - Written interpretation of graphic is provided (**1 point**)
-  - Clear axis labels, titles, and legends are included, where appropriate (**1 point**)
+#### Motivation:
 
-For this work, we used the "Taiwan's credit card default clients" dataset. This one was taken from the UCI Machine Learning Repository and it is composed of 24 features and 30.000 instances. Basically, it contains some demographic and banking information from credit cardholders of a bank in Taiwan for 2005. The features are described as follow:
+The motivation of this project was to ﬁnd a simple and an effective predictive model for the banks to determine if their customers could make the credit card payments on-time. The banks with the invent of credit card were more focused on the number of customers using their credit service but the draw back of them not being able to pay back the credit in time was an issue that soon followed, a system was in need to effectively decide the credit limit to be allowed to a person based on his previous credit history, concentrating on this issue we were motivated to consider various parameters such as sex, age , level of education along with customer details and the credit history of the past 6 months to give a reliable and effective prediction if a customer is able to pay the credit.
+
+So, the main goal was to classify the instances of our dataset according to their demographic and banking features between two classes, to see if they belong or not to credit default.
+
+#### Relevant Work:
+
+  - SR Islam, W Eberle, SK Ghafoor. (2018). "Credit default mining using combined machine learning and heuristic approach" Proceedings of the 2018 International Conference on Data Science, 16-22.
+  - Sharma, Sunakshi & Mehra, Vipul. (2018). Default Payment Analysis of Credit Card Clients. 10.13140/RG.2.2.31307.28967.
+  - Yeh, I. C., & Lien, C. H. (2009). The comparisons of data mining techniques for the predictive accuracy of probability of default of credit card clients. Expert Systems with Applications, 36(2), 2473-2480.
+  - https://www.researchgate.net/publication/326171439_Default_Payment_Analysis_of_Credit_Card_Clients
+  - https://ieeexplore.ieee.org/document/8776802
+
+#### Exploratory Data Analysis:
+
+- About The Dataset:
+
+For this work, we used the "Taiwan's credit card default clients" dataset. This one was taken from the UCI Machine Learning Repository and it is composed of 24 features and 30.000 instances.
+URL where dataset is from: [Dataset](https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset)
+
+Basically, it contains some demographic and banking information from credit cardholders of a bank in Taiwan for 2005. The features are described as follow:
+
+
+```{r, echo=FALSE, results='asis'}
+library(knitr)
+# head(data, n=10)
+kable(data[1:5,], format = "markdown")
+```
+
+The dimension of the dataset, the structure and number if missing values:
+
+
+```{r, echo=FALSE}
+dim(data) #dimension of the data set
+str(data) #structure of the data set
+#assess if we have missing values
+sum(is.na(data))
+```
+
+The dataset doesn't not have any missing values.
+
+
+#### Graphics:
+
 
 ```{r, echo=FALSE}
 #we realize that the values of some features where different to the stated in the repository so we must change that
@@ -114,7 +146,12 @@ data <- data %>%
 #Turning into a categorical feature (factor)
 data$DEFAULT <- factor(data$DEFAULT, levels = c(0,1))
 data$EDUCATION <- factor(data$EDUCATION, levels = c(1:4))
+```
 
+Basic graphs to check the distribution of 3 features:
+
+
+```{r, echo=FALSE}
 #Graphics
 
 #1.Basic graph to check the distribution 3 features
@@ -134,7 +171,14 @@ ggplot(data = data) +
   aes(x = PREPAYSEP)+
   geom_histogram(bins = 30, color="cornsilk4", fill="darkblue") +
   labs(title = "Amount of previous payment in September - Histogram", x = "Amount of previous payment in September (NT$)", y = "Frequency") 
+```
 
+Most of the numerical type features present a positive skewness.
+
+Lets go deeper to understand the behavior of the default payment regarding the balance in the account:
+
+
+```{r, echo=FALSE}
 #Most of the numerical type features presented positive skewness.
 
 #2.Lets go deeper to understand the behavior of the default payment regarding the balance in the account
@@ -151,7 +195,12 @@ ggplot(data = data) +
   theme(panel.background = element_rect(fill = "gray97"))
 
 #it is seem that there is differences between the groups, the people with default tends to have a lower balance account. We must highligth the outlier
+```
 
+It seem that there is differences between the groups, the people with default tends to have a lower balance account. We must highligth the outlier.
+
+
+```{r, echo=FALSE}
 #3.Graph 3
 
 ggplot(data = data) +
@@ -162,7 +211,12 @@ ggplot(data = data) +
   scale_x_discrete(labels = c('Graduate School','University','High School', 'Others'))
 
 #here we can see that mostly university graduated people are the ones with more defaults
+```
 
+We can see that mostly university graduated people are the ones with more defaults.
+
+
+```{r, echo=FALSE}
 #4.Graph 4
 
 g1 <- ggplot(data = data) +
@@ -207,46 +261,67 @@ g6 <- ggplot(data = data) +
   scale_fill_brewer(palette = "Set1") +
   labs(title = "Repayment status in April and default payment", y = "Observation count", x = "Repayment status in April") 
 
-#this is the graph that we need to put in the report
 grid.arrange(g1,g2,g3,g4,g5,g6)
-
-#Here we can see that most of the people with defaul have payments delay for one or three months
 ```
 
-### Methods (**30 points**)
-In this section, you must describe (and perform) the appropriate analysis for answering your question of interest.  Provide a description of both the statistical and machine learning techniques used to answer your question of interest regarding strength of relationships and prediction of your outcome.
+We can see that most of the people with defaul have payments delay for one or three months.
+
+
+```{r, echo=FALSE}
+
+#Here we can see that most of the people with defaul have payments delay for one or three months
+
+#5.Graph
+
+ggplot(data) +
+  aes(x=BAL, y=AGE, color=DEFAULT) + 
+  geom_point(size=3) +
+  scale_fill_brewer(palette = "Set1") +
+  labs(title = "Credit Balance, age of the credit holder and default payment", y = "Age", x = "Amount of the given credit (NT$)") 
+
+#here we can see that there is not a visible pattern between the age and balance amount, also it is no posible to establish a relation between this two and the default payment
+
+data <- data[,-2:-4] #removing sex, education $ marital status features, these ones were the original, we are dropping these because we have a dummy features for each one
+```
+
+And finaly, we can see that there is not a visible pattern between the age and balance amount, also it is no posible to establish a relation between this two and the default payment.
+
+### Methods
 
 The appropriate methods are employed to answer the question of interest, including:
 
-- [ ] **Strength of relationships**: Uses the appropriate technique to assess the strength of relationships amongst your variables of interest. You should include: 
+- [ ] **Strength of relationships**: Uses the appropriate technique to assess the strength of relationships amongst your variables of interest. You should include:
+
   - A formula describing how you believe your features (independent variables) are related to your outcome of interest (dependent variable) (**5 points**)
   - A defense of the variables included in your formula (**5 points**)
   - Creating the appropriate model based on your dataset (**5 points**)
+
+All the work related to machine learning algorithms and data preparation was done using R software, basically, "mlr" package, and others.
+
+As mentioned before, the dataset did not have any missing values, but the data wrangling and engineering was necessary because of the categorical features, as they did not appear as it was mentioned in the repository. Therefore, the first thing that we did was a dummy encoding for sex, education and marriage features, where the following levels were dropped in each one: men, other education, other marital status.
+
+Furthermore, in the data exploration, we realized that the repayment status was not between the proper range (-1 to 9), it was slid one unit (going for -2 to 8); thus, we added one unit to the scale. Regarding this feature, we chose not to encode it as a dummy due to it being ordinal, so it was used as it is.
+
+The proper explanatory data analysis was conducted, checking correlations, skewness, kurtosis, normality distribution and so on; we found issues in the dataset with these measures. For instance, most of the numerical type features presented positive skewness. Moreover, we checked for potential outliers, scaling the features in a range from 0 to a 1, and dropping the ones that showed values higher than 3 (Euclidean distance threshold). The dataset was reduced to 29,265 instances, so we dropped around 735 instances that were potential outliers.
+
 - [ ] **Prediction**: You must also make predictions for your outcome of interest. In doing so, you must demonstrate a clear use of:
+
   - Splitting your data into testing/training data (**2 points**)
   - Applying cross validation to your model (**3 points**)
   - Appropriately handling any missing values (**2 points**)
   - Appropriately using categorical variables (**3 points**)
   - Using a grid search to find the best parameters for you model of interest (**2 points**)
   - Employing the algorithm of interest (**3 points**)
-  
-All the work related to machine learning algorithms and data preparation was done using R software, basically, "mlr" package, and others.
 
-As mentioned before, the dataset did not have any missing values, but the data wrangling and engineering was necessary because of the categorical features, they did not appear as it was stated in the repository. Therefore, the first thing that we did was a dummy encoding for sex, education and marriage features, where the following levels were dropped in each one: men, other education, other marital status.
+For the proper deployment of the algorithms, the dataset was cut in two parts. The first subset was the training set, corresponds to the 80 % of the observations in the original dataset, and it was used to train all the algorithms, also to predict and assess the generalization of the model. On other hand, the test set was only used to evaluate one model (classification tree), to establish how well the model would behave with unseen data.
 
-Furthermore, in the data exploration, we realized that the repayment status was not between the proper range (-1 to 9), it was slid one unit (going for -2 to 8); thus, we added one unit to the scale. Regarding this feature, we chose not to encode as a dummy due to it was ordinal, so it was used like that.
-
-The proper explanatory data analysis was conducted, checking correlations, skewness, kurtosis, normality distribution and so on; we found issues in the dataset with these measures. For instance, most of the numerical type features presented positive skewness. Moreover, we checked for potential outliers, scaling the features in a range from 0 to a 1, and dropping the ones that showed values higher than 3 (Euclidean distance threshold). The dataset was reduced to 29,265 instances, so we dropped around 735 instances that were potential outliers.
-
-For the proper deployment of the algorithms, the dataset was cut in two parts. The first subset was the training one, correspond to the 80 % of the observations in the original dataset, and it was used to train all the algorithms, also to predict and assess the generalization of the model. On other hand, the test set was only used to evaluate one model (classification tree), to establish how well the model would behave with unseen data.
-
-Once the dataset was split, we proceeded to scale the features because some of them were in different units of measurement. To fulfill this task, we used the min-max scaling function. Afterward, some statistics summery was applied to check the results, we realized that for the machine algorithms deployment we would have some trouble with predictions because the classes of our label feature. To solve this unbalance data issue, we performed a data balance process to avoid that in our prediction the model will be tempted to misclassify the minority class; in general, machine learning algorithms tends to follow the majority, so they will perform well with the most common class and not that good with the uncommon one.
+Once the dataset was split, we proceeded to scale the features because some of them were in different units of measurement. To fulfill this task, we used the min-max scaling function. Afterward, a statistical summary was applied to check the results. We realized that for the machine learning algorithms deployment, we would have some trouble with predictions because of the classes of our label feature. To solve this unbalance data issue, we performed a data balance process to avoid that in our prediction, the model will be tempted to misclassify the minority class. In general, machine learning algorithms tends to follow the majority, so they will perform well with the most common class and not that good with the uncommon one.
 
 After all the process described before, we applied eight machine learning algorithms on the training set following the "mlr" approach (create a task, create a learner, train, predict, resampling). We implemented the following algorithms: Classification Tree, Logistic Regression, and Neural Network). Basically, we trained each one of them, then obtained a prediction for the training set, observed their performance and finally we evaluated their generalization with a resampling approach.
 
-It is important to remark that for resampling (assessed of the algorithms) it was used repeated cross-validation, setting the parameters in 3 folds and 2 repetitions.
+It is important to remark that for resampling (assessed of the algorithms) we used repeated cross-validation, setting the parameters in 3 folds and 2 repetitions.
 
-### Results (**20 points**)
+### Results
 Describe the results of your analysis. What did you find? You should include at least 2 visuals that showcase the results (this is distinct from the exploratory analysis above, and should demonstrate the results of the methods you employed). 
 
 You must provide a clear interpretation of your statistical and machine learning results, including at least **one visual or table** for each.
@@ -254,18 +329,85 @@ You must provide a clear interpretation of your statistical and machine learning
 - [ ] **Strengths of relationships**: For the features you included in your model, you must describe the strength (significance) and magnitude of the relationships. This can be presented in a table or chart, and pertinent observations should be described in the text. (**10 points**)
 - [ ] **Predictions**: How well were you able to predict values in the dataset? You should both report appropriate metrics based on the type of outcome you're predicting (e.g., root mean squared error v.s. accuracy), as well as a high quality visual showing the strength of your model (**10 points**)
 
-Classification trees: As its name suggests, this algorithm follows a tree structure to predict a class, where each tree has its root node (a relevant feature to predict the class), leaf nodes (following features) and branches (output of the test). Works by partitioning the feature space into a number of smaller scenarios with similar response values using a set of splitting rules. The segmentation process is typically carried out using only one explanatory variable at a time.
+```{r, echo=FALSE}
+#correlation
+data$DEFAULT <- as.numeric(data$DEFAULT)
+cor(data)
+corrplot(cor(data))
+corrplot.mixed(cor(data))
+#the most correlated variables with "default" are the repayment status ones
+#formula: default = all the variables, the idea is using all the features availables
 
-### Discussion and Future Work (**10 points**)
-What are the real world implications of your results, and what further work should be done in this area based on your insights?
+#Skewness and Kurtosis
+apply(data[,c(1,9:20)],2,kurtosis)
+apply(data[,c(1,9:20)],2,skewness)
 
-Based on _specific observations_ from the results section, the report clearly provides:
+#Normality
+apply(data[,1:20],2,jarque.bera.test)
+#most of the variables dont have a normal distribution
 
-- [ ] An analysis of the real world implications of the results, at least one full paragraph (**5 points**)
-- [ ] Clear suggestion for directions of future research, at least one full paragraph (**5 points**)
+#Outliers
+#Using the euclidean distances (if its higher than 3 is a unsual case)
 
-### Code Quality (**5 points**)
+data <- data%>%
+  mutate(out_BAL = abs(scale(data$BAL)),
+         out_SEP = abs(scale(data$BILLSEP)),
+         out_AGO = abs(scale(data$BILLAGO)),
+         out_JUL = abs(scale(data$BILLJUL)),
+         out_JUN = abs(scale(data$BILLJUN)),
+         out_MAY = abs(scale(data$BILLMAY)),
+         out_ABR = abs(scale(data$BILLABR)))
 
-- [ ] Code is well commented and structured (e.g., indented), organized across multiple different files, uses clear variable names, and runs on any computer.
+#removing the potencial outlier
+data <- data%>%
+  filter(out_BAL < 3 | out_SEP < 3 | out_AGO < 3 | out_JUL < 3 |
+           out_JUN < 3, out_MAY < 3, out_ABR <3)
 
-You should submit two URLs for the project: your GitHub repository URL, as well as the URL of the hosted website where your report can be viewed.
+#removing the variables created for check the outlier
+table(data$DEFAULT)
+data <- data[,-28:-34]
+
+#Spliting the dataset
+
+data$DEFAULT <- factor(data$DEFAULT, levels = c(0,1))
+set.seed(100)
+index_1 <- sample(1:nrow(data), round(nrow(data) * 0.8))
+train <- data[index_1, ]
+test  <- data[-index_1, ]
+summary(train)
+
+#Normalize
+normalize <- function(x) {
+  return ((x - min(x)) / (max(x) - min(x)))
+}
+
+train <- replace(train, 1:20,(apply(train[,1:20],2,normalize)))
+test <- replace(test, 1:20,(apply(test[,1:20],2,normalize)))
+
+#Balance the dataset
+Y <- train[,21]
+X <- train[,-21]
+balance_train <- ubSMOTE(X = X, Y = Y$DEFAULT, perc.over = 100, perc.under = 300, k=3)
+btrain <- as.data.frame(cbind(X = balance_train$X, DEFAULT = balance_train$Y))
+table(btrain$DEFAULT)/nrow(btrain)
+
+YT <- test[,21]
+XT <- test[,-21]
+balance_test <- ubSMOTE(X = XT, Y = as.factor(YT$DEFAULT), perc.over = 100, perc.under = 300, k=3)
+btest <- as.data.frame(cbind(X = balance_test$X, DEFAULT = balance_test$Y))
+table(btest$DEFAULT)/nrow(btest)
+```
+
+### Discussion and Future Work
+
+- Real world implications:
+
+This work can help in ﬁguring out what can be the distinctive features of a person who is been classiﬁed as a defaulter in the banking system. This can help the banks to make the informed decisions, for instance what all features need to be included in a person in order to issue a credit card or judge the eligibility or repaying capacity of a person.
+
+- Future research:
+
+The future research for this project can include using advanced neural network and support vector machine as an alternative data mining methodologies to actually see if the true positive rate for predicting the defaulters is increasing along with the accuracy of the model. We could also apply the bining of the ages to segment the customers according to their age range.
+
+### Code Quality
+
+We assured that our code is well commented, structured and organized across different files, as we included a Script.R file in the repository with all the code used for this project. As well as, some code snippet that we included to generat the analysis and visualizations in this report.

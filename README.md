@@ -1,6 +1,6 @@
 # DATA PROCESSES FINAL PROJECT (GROUP 3)
 
-   ## Group Users
+   ## Group Members
 
 | Name                      | Github username           |
 |---------------------------|---------------------------|
@@ -8,11 +8,10 @@
 | BORRERO GARCIA FRANCISCO  | Macvayne                  |
 | TAHIRI ALAOUI OUSSAMA     | oussama-talaoui           |
 
+In the [report](https://oussama-talaoui.github.io/final-project/) page you can find the answers for the following questions:
+### Abstract (**5 points**)
 
- ### Abstract (**5 points**)
-A 150 word (maximum) summary of your project and findings.
-
-- [ ] Succinctly summarizes the importance and findings of the project within the 150 word limit.
+- [ ] A summary of your project and findings.
 
 ### Introduction and Related Work (**10 points**)
 An explanation of the problem and the motivation for solving it. Make sure to cite at least 5 related works to situate your question within the broader topic area.
