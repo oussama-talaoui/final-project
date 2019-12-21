@@ -16,12 +16,12 @@ In the [report](https://oussama-talaoui.github.io/final-project/) page you can f
 ### Introduction and Related Work
 An explanation of the problem and the motivation for solving it:
 
-- [X] Provides a clear motivation for answering a _specific_ data driven question of interest
+- [X] Provides a clear motivation for answering our question of interest
 - [X] Cites 5 _relevant_ pieces of relevant work 
 
 ### Exploratory Data Analysis
 
-- [X] Introduces the dataset by describing the origin (source) and structure (shape, relevant features) of the data being used.
+- [X] Introduces the dataset by describing the source and structure of the data being used.
 - [X] Includes More than 5 graphics:
   
   - The visual uses the appropriate visual encodings based on the data type.
@@ -43,13 +43,13 @@ The appropriate methods are employed to answer the question of interest, includi
   - Applying cross validation to our model.
   - Appropriately handling any missing values.
   - Appropriately using categorical variables.
-  - Using a grid search to find the best parameters for you model of interest.
+  - Using a grid search to find the best parameters for our model of interest.
   - Employing the algorithm of interest.
 
 ### Results
 In this part we described the results of our analysis with clear interpretation of our statistical and machine learning results.
 
-- [X] **Strengths of relationships**: For the features we included in our model, you described the strength (significance) and magnitude of the relationships.
+- [X] **Strengths of relationships**: For the features we included in our model, our described the strength (significance) and magnitude of the relationships.
 
 - [X] **Predictions**: We used appropriate metrics based on the type of outcome, as well as a high quality visual showing the strength of our model.
 
@@ -58,8 +58,8 @@ We mentioned real world implications of our results, and what further work shoul
 
 Based on _specific observations_ from the results section, the report clearly provides:
 
-- [X] An analysis of the real world implications of the results, at least one full paragraph.
-- [X] Clear suggestion for directions of future research, at least one full paragraph.
+- [X] An analysis of the real world implications of the results.
+- [X] Clear suggestion for directions of future research.
 
 ### Code Quality
 
