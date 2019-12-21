@@ -60,4 +60,4 @@ Based on _specific observations_ from the results section, the report clearly pr
 
 ### Code Quality
 
-- [X] We assured that our code is well commented, structured and organized across different files, as we included a Script.R file in the repository with all the code used for this project. As well as, some code snippet that we included to generat the analysis and visualizations in this report.
+- [X] We assured that our code is well commented, structured and organized across different files, as we included a Script.R file in the repository with all the code used for this project. As well as, some code snippet that we included to general the analysis and visualizations in this report.

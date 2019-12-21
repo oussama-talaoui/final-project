@@ -59,7 +59,7 @@ data <- data %>%
 
 The aim of this project was to work with a "credit card default" dataset to classify if a person would fall or not in credit default considering demographic and banking characteristics.
 
-For each model that we realized to answer our question, there were no significant differences between the models in terms of the performance measures, The first one was Decesion Tree, the second one was Logistic and the last one was Neural Network.
+For each model that we realized to answer our question, there were no significant differences between the models in terms of the performance measures. The first one was Decision Tree, the second one was Logistic and the last one was Neural Network.
 
 After all the training process we decided to test one solution with unseen data, we choose the classification tree algorithm to do this; the output exhibited that the performance measure in this step was even better than the one we saw for the training set and that the algorithm pointed as the most relevant features the repayment status in September and the repayment status in April, thus, the possibility of falling in credit default will be associated with them.
 
@@ -67,7 +67,7 @@ After all the training process we decided to test one solution with unseen data,
 
 #### Motivation:
 
-The motivation of this project was to ﬁnd a simple and an effective predictive model for the banks to determine if their customers could make the credit card payments on-time. The banks with the invent of credit card were more focused on the number of customers using their credit service but the draw back of them not being able to pay back the credit in time was an issue that soon followed, a system was in need to effectively decide the credit limit to be allowed to a person based on his previous credit history, concentrating on this issue we were motivated to consider various parameters such as sex, age , level of education along with customer details and the credit history of the past 6 months to give a reliable and effective prediction if a customer is able to pay the credit.
+The motivation of this project was to ﬁnd a simple and an effective predictive model for the banks to determine if their customers could make the credit card payments on-time. The banks with the invent of credit card were more focused on the number of customers using their credit service but the drawback of them not being able to pay back the credit in time was an issue that soon followed, a system was in need to effectively decide the credit limit to be allowed to a person based on his previous credit history, concentrating on this issue we were motivated to consider various parameters such as sex, age , level of education along with customer details and the credit history of the past 6 months to give a reliable and effective prediction if a customer is able to pay the credit.
 
 So, the main goal was to classify the instances of our dataset according to their demographic and banking features between two classes, to see if they belong or not to credit default.
 
@@ -176,7 +176,7 @@ ggplot(data = data) +
 
 Most of the numerical type features present a positive skewness.
 
-Lets go deeper to understand the behavior of the default payment regarding the balance in the account:
+Let us go deeper to understand the behavior of the default payment regarding the balance in the account:
 
 
 ```{r, echo=FALSE}
@@ -198,7 +198,7 @@ ggplot(data = data) +
 #it is seem that there is differences between the groups, the people with default tends to have a lower balance account. We must highligth the outlier
 ```
 
-It seem that there is differences between the groups, the people with default tends to have a lower balance account. We must highligth the outlier.
+It seems that there is differences between the groups, the people with default tends to have a lower balance account. We must highlight the outlier.
 
 
 ```{r, echo=FALSE}
@@ -265,7 +265,7 @@ g6 <- ggplot(data = data) +
 grid.arrange(g1,g2,g3,g4,g5,g6)
 ```
 
-We can see that most of the people with defaul have payments delay for one or three months.
+We can see that most of the people with default have payments delay for one or three months.
 
 
 ```{r, echo=FALSE}
@@ -285,7 +285,7 @@ ggplot(data) +
 data <- data[,-2:-4] #removing sex, education $ marital status features, these ones were the original, we are dropping these because we have a dummy features for each one
 ```
 
-And finaly, we can see that there is not a visible pattern between the age and balance amount, also it is no posible to establish a relation between this two and the default payment.
+And finally, we can see that there is not a visible pattern between the age and balance amount, also it is no possible to establish a relation between this two and the default payment.
 
 ### Methods
 
@@ -433,42 +433,51 @@ getTaskFeatureNames(clasificacion.task)
 
 - **Decision Tree**:
 
-Train
-```{r, echo=FALSE}
+As its name suggests, this algorithm follows a tree structure to predict a class, where each tree has its root node (a relevant feature to predict the class), leaf nodes (following features) and branches (output of the test). Works by partitioning the feature space into a number of smaller scenarios with similar response values using a set of splitting rules. The segmentation process is typically carried out using only one explanatory variable at a time.
+
+Train:
+```{r, echo=FALSE, results='hide'}
 ##DECISION TREE----
 
 #Learner
 getParamSet("classif.rpart")
 learner.dt <- makeLearner("classif.rpart", 
                          predict.type = "response")
+```
 
+```{r, echo=FALSE}
 #Train
 mod.dt <- mlr::train(learner.dt, clasificacion.task)
 getLearnerModel(mod.dt)
 
 ```
 
-Prediction
-```{r, echo=FALSE,}
+Prediction:
+```{r, echo=FALSE}
 #Predict
 predict.dt <- predict(mod.dt, task = clasificacion.task)
 head(as.data.frame(predict.dt))
-calculateConfusionMatrix(predict.dt)
+```
 
+```{r, echo=FALSE}
+calculateConfusionMatrix(predict.dt)
 predict.test.dt <- predict(mod.dt, newdata = btest)#TEST PREDICTION
 ```
 
-Performance
-```{r, echo=FALSE,}
+Performance:
+```{r, echo=FALSE, results='hide'}
 #Performance
 listMeasures(clasificacion.task)
 performance(predict.dt, measures = list(acc, mmce, kappa))
+```
+
+```{r, echo=FALSE}
 performance(predict.test.dt, measures = list(acc, mmce, kappa))#PERFORMANCE TEST
 
 ```
 
-Resampling
-```{r, echo=FALSE,}
+Resampling:
+```{r, echo=FALSE}
 
 #Resampling
 RCV.dt <- repcv(learner.dt, clasificacion.task, folds = 3, reps = 2, 
@@ -479,16 +488,19 @@ RCV.dt$aggr
 
 Here is a graph of the generated tree:
 
-```{r, echo=FALSE,}
+```{r, echo=FALSE, results='hide'}
 
 #GRAPH OF THE TREE
 rpart.plot(mod.dt$learner.model,  box.palette="RdBu", shadow.col="gray", nn=TRUE)
 
 ```
+For our data, the algorithm applied for building the tree used some of the available features, but the most relevant ones were X.RPSEP and X.RPABR. Thus, according to this algorithm, the possibility of falling in credit default will be associated with the repayment status in September and the repayment status in April.
 
 - **Logistic**:
 
-```{r, echo=FALSE}
+According to I-Chen & Chen-hiu “logistic regression is used for binary classification; problems that are confined to two classes, basically, a logistic regression model specifies that an appropriate function of the fitted probability of the event is a linear function of the observed values of the available explanatory variables”.
+
+```{r, echo=FALSE, results='hide'}
 ##LOGISTIC----
 
 #learner
@@ -497,16 +509,19 @@ learner.lr <- makeLearner("classif.logreg",
                          predict.type = "response")
 ```
 
-Train
-```{r, echo=FALSE,}
+Train:
+```{r, echo=FALSE, results='hide'}
 #Train
 mod.lr <- mlr::train (learner.lr, clasificacion.task)
 getLearnerModel(mod.lr)
+```
+
+```{r, echo=FALSE}
 summary(mod.lr$learner.model)#OUTPUT
 
 ```
 
-Prediction
+Prediction:
 ```{r, echo=FALSE,}
 
 #Prediction
@@ -515,7 +530,7 @@ calculateConfusionMatrix(predict.lr)
 
 ```
 
-Performance
+Performance:
 ```{r, echo=FALSE,}
 
 #Performance
@@ -523,7 +538,7 @@ performance(predict.lr, measures = list(acc, mmce, kappa))
 
 ```
 
-Resampling
+Resampling:
 ```{r, echo=FALSE,}
 
 #Resampling
@@ -532,25 +547,29 @@ RCV.lr <- repcv(learner.lr, clasificacion.task, folds = 3, reps = 2,
 RCV.lr$aggr
 
 ```
+For the logistic regression output we are going to focus our attention on the mean misclassification error (MMCE), this performance measure evaluates the number of the wrong classifications from the total input of the training set (in this case).  The objective in a machine learning project is to minimize it; in our logistic model the mmce was 28 %, that means that this algorithm misclassified 28 % of the instances according to the observed class.
+
+Going a little bit deeper on the output of the logistic regression we realized that some features were not statistically significant to the model (according to their p-value) some of them were: marital status, BILLJUN, BILLJUL, RPJUN and others. Meanwhile, features like RPSEP, BILLAGO, BILLJUL and others, increase the possibility of falling in credit default.
 
 - **Neural Network**:
 
-```{r, echo=FALSE}
+ANN are inspired by the way the human brain works, particularly, on the biological neuron structure. The approach holds all its power in a neuron, which is the central unit and the one in charge of the computations; thus, it receives features as inputs and then operates a function of the weighted sum of these plus the bias to generate an output. Essentially, the prediction of the class it's done by a learning process that is based on examples.
+
+Learner:
+```{r, echo=FALSE, results='hide'}
 ##Neural Network----
-
-```
-
-Learner
-```{r, echo=FALSE,}
 #learner
 getParamSet("classif.nnet")
 learner.nn <- makeLearner("classif.nnet", 
                           predict.type = "response")
+```
+
+```{r, echo=FALSE}
 learner.nn$par.set
 
 ```
 
-Train
+Train:
 ```{r, echo=FALSE,}
 
 #Train
@@ -559,49 +578,62 @@ getLearnerModel(mod.nn)
 
 ```
 
-Prediction
-```{r, echo=FALSE,}
+Prediction:
+```{r, echo=FALSE}
 
 #Predict
 predict.nn <- predict(mod.nn, task = clasificacion.task)
 head(as.data.frame(predict.nn))
-calculateConfusionMatrix(predict.nn)
+```
 
+```{r, echo=FALSE, results='hide'}
+calculateConfusionMatrix(predict.nn)
 predict.test.nn <- predict(mod.nn, newdata = btest)
 
 ```
 
-Performance
+With the Neural Network method, we were capable of predicting that a credit holder would fall in default with an acceptable chance of misclassification. According to the performance measures, the model misclassificate an observation in 26 % of the opportunities.
+
+Performance:
 ```{r, echo=FALSE,}
 
 #Performance
 performance(predict.nn, measures = list(acc, mmce, kappa))
+```
+
+```{r, echo=FALSE, results='hide'}
 performance(predict.test.nn, measures = list(acc, mmce, kappa))
 
 ```
 
-Resampling
-```{r, echo=FALSE,}
+Resampling:
+```{r, echo=FALSE, results='hide'}
 
 #Resampling
 RCV.nn <- repcv(learner.nn, clasificacion.task, folds = 3, reps = 2, 
              measures = list(acc, mmce, kappa), stratify = TRUE)
 
+```
+
+```{r, echo=FALSE}
 RCV.nn$aggr
 
 ```
 
 - **Benchmark**:
 
-A comparison between the 3 models:
+A comparison between the 3 models to judge, at the same time, their performance. The main idea with this was to compare and rank the methods to establish which one helps us to classify better in the training set and to determine which would generalize better using new data.
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, results='hide'}
 ##Benchmark----
 
 #to compare between models
 lrns <- list(learner.dt, learner.lr, learner.nn)
 rdesc <- makeResampleDesc("RepCV", folds = 3, reps = 2) #Choose the resampling strategy
 bmr <- benchmark(lrns, clasificacion.task, rdesc, measures = list(acc, mmce, kappa))
+```
+
+```{r, echo=FALSE}
 getBMRPerformances(bmr, as.df = TRUE)
 getBMRAggrPerformances(bmr, as.df = TRUE)
 
@@ -615,8 +647,8 @@ This work can help in ﬁguring out what can be the distinctive features of a pe
 
 - Future research:
 
-The future research for this project can include using advanced neural network and support vector machine as an alternative data mining methodologies to actually see if the true positive rate for predicting the defaulters is increasing along with the accuracy of the model. We could also apply the bining of the ages to segment the customers according to their age range.
+The future research for this project can include using advanced neural network and support vector machine as an alternative data mining methodologies to actually see if the true positive rate for predicting the defaulters is increasing along with the accuracy of the model. We could also apply the binding of the ages to segment the customers according to their age range.
 
 ### Code Quality
 
-We assured that our code is well commented, structured and organized across different files, as we included a Script.R file in the repository with all the code used for this project. As well as, some code snippet that we included to generat the analysis and visualizations in this report.
+We assured that our code is well commented, structured and organized across different files, as we included a Script.R file in the repository with all the code used for this project. As well as, some code snippet that we included to generate the analysis and visualizations in this report.
